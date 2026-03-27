@@ -1,5 +1,6 @@
-import { Shield, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import logo from "@/assets/logo.png";
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -8,7 +9,7 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
         <a href="/" className="flex items-center gap-2">
-          <Shield className="h-7 w-7 text-primary" />
+          <img src={logo} alt="BlessGuardian" className="h-8 w-8" />
           <span className="font-display text-lg font-bold text-foreground">BlessGuardian</span>
         </a>
 

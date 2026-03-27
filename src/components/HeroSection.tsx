@@ -1,5 +1,6 @@
-import { Shield, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import heroPhone from "@/assets/hero-phone.png";
+import logo from "@/assets/logo.png";
 
 const HeroSection = () => {
   return (
@@ -12,7 +13,7 @@ const HeroSection = () => {
       <div className="container relative grid md:grid-cols-2 gap-12 items-center">
         <div className="flex flex-col gap-6">
           <div className="inline-flex items-center gap-2 w-fit rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary">
-            <Shield className="h-3.5 w-3.5" />
+            <img src={logo} alt="" className="h-4 w-4" />
             Proteção com Inteligência Artificial
           </div>
 
