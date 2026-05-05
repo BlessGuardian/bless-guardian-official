@@ -1,3 +1,1 @@
-# Welcome to your Lovable project
-
-TODO: Document your project here
+Site do nosso Projeto de TCC de CIÊNCIAS DA COMPUTAÇÃO - INSTITUTO MAUÁ DE TECNOLOGIA, Orientado pelo Prof. Rodrigo Bossini Tavares
