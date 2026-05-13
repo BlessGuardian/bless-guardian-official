@@ -18,7 +18,7 @@ const Navbar = () => {
           <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Como funciona</a>
           <a href="#apps" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Apps protegidos</a>
           <a
-            href="/login"
+            href="/dashboard"
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted transition-colors"
           >
             Meu Painel
@@ -43,7 +43,7 @@ const Navbar = () => {
           <a href="#features" className="text-sm text-muted-foreground" onClick={() => setOpen(false)}>Recursos</a>
           <a href="#how-it-works" className="text-sm text-muted-foreground" onClick={() => setOpen(false)}>Como funciona</a>
           <a href="#apps" className="text-sm text-muted-foreground" onClick={() => setOpen(false)}>Apps protegidos</a>
-          <a href="/login" className="text-sm text-muted-foreground" onClick={() => setOpen(false)}>Meu Painel</a>
+          <a href="/dashboard" className="text-sm text-muted-foreground" onClick={() => setOpen(false)}>Meu Painel</a>
           <a
             href="https://github.com/cognix-io/anti-fraud-agent-android"
             target="_blank"
