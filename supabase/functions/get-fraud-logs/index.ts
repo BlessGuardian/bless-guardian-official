@@ -1,6 +1,17 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { Client } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 
+const normalizePem = (value?: string) => {
+  if (!value) return undefined;
+  const body = value
+    .replace(/-----BEGIN CERTIFICATE-----/g, "")
+    .replace(/-----END CERTIFICATE-----/g, "")
+    .replace(/\s+/g, "");
+
+  const lines = body.match(/.{1,64}/g)?.join("\n") ?? body;
+  return `-----BEGIN CERTIFICATE-----\n${lines}\n-----END CERTIFICATE-----`;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -14,10 +25,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Parse URL to build a config that doesn't enforce CA validation
-  // (Aiven uses its own CA which the Deno runtime doesn't trust by default).
-  const caCert = Deno.env.get("AIVEN_CA_CERT");
-  console.log("CA cert present:", !!caCert, "length:", caCert?.length ?? 0, "starts:", caCert?.slice(0, 30));
+  const caCert = normalizePem(Deno.env.get("AIVEN_CA_CERT"));
 
   const u = new URL(dbUrl);
   const client = new Client({
@@ -37,7 +45,10 @@ Deno.serve(async (req) => {
     await client.connect();
 
     const result = await client.queryObject<Record<string, unknown>>(
-      `SELECT * FROM fraud_logs ORDER BY 1 DESC LIMIT 500`,
+      `SELECT id, source, risk_score, is_fraud, explanation, detected_at
+       FROM fraud_logs
+       ORDER BY detected_at DESC
+       LIMIT 500`,
     );
 
     return new Response(

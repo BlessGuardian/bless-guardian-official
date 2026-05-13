@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getCurrentUser, logout, type User } from "@/lib/auth";
-import { mockStats, mockAttempts, mockChartData, mockAppBreakdown } from "@/lib/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { buildDashboardData, mockStats, mockAttempts, mockChartData, mockAppBreakdown, type AivenFraudLog } from "@/lib/mockData";
 import {
   Shield, ShieldAlert, ShieldCheck, Smartphone, LogOut,
   TrendingUp, AlertTriangle, Lightbulb, HelpCircle, ChevronRight,
@@ -38,24 +37,30 @@ const tips = [
 ];
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUsingLiveData, setIsUsingLiveData] = useState(false);
+  const [dashboardData, setDashboardData] = useState({
+    stats: mockStats,
+    attempts: mockAttempts,
+    chartData: mockChartData,
+    appBreakdown: mockAppBreakdown,
+  });
 
   useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      navigate("/login");
-      return;
-    }
-    setUser(u);
-  }, [navigate]);
+    const loadFraudLogs = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase.functions.invoke<{ rows: AivenFraudLog[] }>("get-fraud-logs");
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+      if (!error && data?.rows?.length) {
+        setDashboardData(buildDashboardData(data.rows));
+        setIsUsingLiveData(true);
+      }
 
-  if (!user) return null;
+      setIsLoading(false);
+    };
+
+    loadFraudLogs();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,21 +72,33 @@ const Dashboard = () => {
             <span className="font-display text-base font-bold text-foreground">BlessGuardian</span>
           </a>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:inline">Olá, {user.name}</span>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" /> Sair
+            <span className="text-sm text-muted-foreground hidden sm:inline">Modo sem autenticação</span>
+            <Button variant="ghost" size="sm" asChild>
+              <a href="/">
+                <LogOut className="h-4 w-4 mr-1" /> Voltar
+              </a>
             </Button>
           </div>
         </div>
       </header>
 
       <main className="container py-8 space-y-8">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Área do usuário</p>
+            <h1 className="font-display text-3xl font-bold text-foreground">Dashboard de proteção</h1>
+          </div>
+          <Badge variant={isUsingLiveData ? "default" : "secondary"} className="w-fit">
+            {isLoading ? "Carregando dados" : isUsingLiveData ? "Dados Aiven Cloud" : "Dados demonstrativos"}
+          </Badge>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard icon={<ShieldAlert className="h-5 w-5 text-red-400" />} label="Tentativas Detectadas" value={mockStats.totalAttempts} />
-          <StatCard icon={<ShieldCheck className="h-5 w-5 text-emerald-400" />} label="Golpes Bloqueados" value={mockStats.blocked} />
-          <StatCard icon={<AlertTriangle className="h-5 w-5 text-yellow-400" />} label="Alto Risco" value={mockStats.highRisk} />
-          <StatCard icon={<Smartphone className="h-5 w-5 text-primary" />} label="Apps Protegidos" value={mockStats.appsProtected} />
+          <StatCard icon={<ShieldAlert className="h-5 w-5 text-red-400" />} label="Tentativas Detectadas" value={dashboardData.stats.totalAttempts} />
+          <StatCard icon={<ShieldCheck className="h-5 w-5 text-emerald-400" />} label="Golpes Bloqueados" value={dashboardData.stats.blocked} />
+          <StatCard icon={<AlertTriangle className="h-5 w-5 text-yellow-400" />} label="Alto Risco" value={dashboardData.stats.highRisk} />
+          <StatCard icon={<Smartphone className="h-5 w-5 text-primary" />} label="Apps Protegidos" value={dashboardData.stats.appsProtected} />
         </div>
 
         {/* Tabs */}
@@ -103,7 +120,7 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={mockChartData}>
+                    <BarChart data={dashboardData.chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,20%,18%)" />
                       <XAxis dataKey="month" stroke="hsl(220,10%,50%)" fontSize={12} />
                       <YAxis stroke="hsl(220,10%,50%)" fontSize={12} />
@@ -126,8 +143,8 @@ const Dashboard = () => {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
-                      <Pie data={mockAppBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50} paddingAngle={3}>
-                        {mockAppBreakdown.map((entry, i) => (
+                      <Pie data={dashboardData.appBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50} paddingAngle={3}>
+                        {dashboardData.appBreakdown.map((entry, i) => (
                           <Cell key={i} fill={entry.fill} />
                         ))}
                       </Pie>
@@ -159,7 +176,7 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockAttempts.map((a) => (
+                      {dashboardData.attempts.map((a) => (
                         <tr key={a.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                           <td className="py-3 pr-4 whitespace-nowrap">{a.date}</td>
                           <td className="py-3 pr-4 font-medium">{a.app}</td>
