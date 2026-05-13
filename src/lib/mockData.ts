@@ -55,6 +55,7 @@ export const mockAppBreakdown = [
 ];
 
 export interface AivenFraudLog {
+  content: string | null;
   id: string;
   source: string | null;
   risk_score: string | number | null;
@@ -85,6 +86,7 @@ const getRisk = (score: string | number | null): FraudAttempt["risk"] => {
 export const buildDashboardData = (logs: AivenFraudLog[]) => {
   const attempts: FraudAttempt[] = logs.map((log) => ({
     id: log.id,
+    content: log.content,
     date: log.detected_at ? dateFormatter.format(new Date(log.detected_at)) : "Sem data",
     app: log.source ?? "Desconhecido",
     type: log.is_fraud ? "Possível golpe" : "Seguro",
