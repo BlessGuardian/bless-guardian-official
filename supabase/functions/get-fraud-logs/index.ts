@@ -14,7 +14,21 @@ Deno.serve(async (req) => {
     );
   }
 
-  const client = new Client(dbUrl);
+  // Parse URL to build a config that doesn't enforce CA validation
+  // (Aiven uses its own CA which the Deno runtime doesn't trust by default).
+  const u = new URL(dbUrl);
+  const client = new Client({
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.replace(/^\//, "") || "defaultdb",
+    hostname: u.hostname,
+    port: Number(u.port || 5432),
+    tls: {
+      enabled: true,
+      enforce: false,
+      caCertificates: [],
+    },
+  });
 
   try {
     await client.connect();
