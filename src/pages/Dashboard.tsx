@@ -172,6 +172,7 @@ const Dashboard = () => {
                         <th className="pb-3 font-medium">Tipo</th>
                         <th className="pb-3 font-medium">Risco</th>
                         <th className="pb-3 font-medium">Status</th>
+                        <th className="pb-3 font-medium hidden lg:table-cell">Conteúdo</th>
                         <th className="pb-3 font-medium hidden md:table-cell">Descrição</th>
                       </tr>
                     </thead>
@@ -190,6 +191,9 @@ const Dashboard = () => {
                             <Badge variant={a.blocked ? "default" : "destructive"} className="text-xs">
                               {a.blocked ? "Bloqueado" : "Alerta"}
                             </Badge>
+                          </td>
+                          <td className="py-3 pr-4 text-muted-foreground hidden lg:table-cell max-w-sm truncate" title={a.content ?? undefined}>
+                            {a.content ?? "Sem conteúdo"}
                           </td>
                           <td className="py-3 text-muted-foreground hidden md:table-cell max-w-xs truncate">{a.description}</td>
                         </tr>

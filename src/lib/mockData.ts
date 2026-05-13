@@ -7,6 +7,7 @@ export interface FraudAttempt {
   date: string;
   app: string;
   type: string;
+  content?: string | null;
   risk: "alto" | "médio" | "baixo";
   blocked: boolean;
   description: string;
