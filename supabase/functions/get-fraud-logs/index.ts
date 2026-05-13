@@ -16,6 +16,9 @@ Deno.serve(async (req) => {
 
   // Parse URL to build a config that doesn't enforce CA validation
   // (Aiven uses its own CA which the Deno runtime doesn't trust by default).
+  const caCert = Deno.env.get("AIVEN_CA_CERT");
+  console.log("CA cert present:", !!caCert, "length:", caCert?.length ?? 0, "starts:", caCert?.slice(0, 30));
+
   const u = new URL(dbUrl);
   const client = new Client({
     user: decodeURIComponent(u.username),
@@ -26,7 +29,7 @@ Deno.serve(async (req) => {
     tls: {
       enabled: true,
       enforce: true,
-      caCertificates: Deno.env.get("AIVEN_CA_CERT") ? [Deno.env.get("AIVEN_CA_CERT")!] : [],
+      caCertificates: caCert ? [caCert] : [],
     },
   });
 
