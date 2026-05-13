@@ -58,9 +58,9 @@ export const mockAppBreakdown = [
 export interface AivenFraudLog {
   content: string | null;
   id: string;
-  source: string | null;
-  risk_score: string | number | null;
-  is_fraud: boolean | null;
+  source?: string | null;
+  risk_score?: string | number | null;
+  is_fraud?: boolean | null;
   explanation: string | null;
   detected_at: string | null;
 }
@@ -77,7 +77,7 @@ const appColors = [
 const monthFormatter = new Intl.DateTimeFormat("pt-BR", { month: "short" });
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-const getRisk = (score: string | number | null): FraudAttempt["risk"] => {
+const getRisk = (score?: string | number | null): FraudAttempt["risk"] => {
   const value = Number(score ?? 0);
   if (value >= 0.75) return "alto";
   if (value >= 0.4) return "médio";
@@ -89,18 +89,18 @@ export const buildDashboardData = (logs: AivenFraudLog[]) => {
     id: log.id,
     content: log.content,
     date: log.detected_at ? dateFormatter.format(new Date(log.detected_at)) : "Sem data",
-    app: log.source ?? "Desconhecido",
-    type: log.is_fraud ? "Possível golpe" : "Seguro",
+    app: log.source ?? "Aiven",
+    type: (log.is_fraud ?? true) ? "Possível golpe" : "Seguro",
     risk: getRisk(log.risk_score),
-    blocked: Boolean(log.is_fraud),
+    blocked: log.is_fraud ?? true,
     description: log.explanation ?? "Sem descrição disponível",
   }));
 
   const stats: DashboardStats = {
     totalAttempts: logs.length,
-    blocked: logs.filter((log) => log.is_fraud).length,
+    blocked: logs.filter((log) => log.is_fraud ?? true).length,
     highRisk: logs.filter((log) => getRisk(log.risk_score) === "alto").length,
-    appsProtected: new Set(logs.map((log) => log.source).filter(Boolean)).size,
+    appsProtected: new Set(logs.map((log) => log.source ?? "Aiven")).size,
   };
 
   const chartMap = new Map<string, { month: string; tentativas: number; bloqueadas: number; time: number }>();
@@ -120,7 +120,7 @@ export const buildDashboardData = (logs: AivenFraudLog[]) => {
     .map(({ month, tentativas, bloqueadas }) => ({ month, tentativas, bloqueadas }));
 
   const appCount = new Map<string, number>();
-  logs.forEach((log) => appCount.set(log.source ?? "Desconhecido", (appCount.get(log.source ?? "Desconhecido") ?? 0) + 1));
+  logs.forEach((log) => appCount.set(log.source ?? "Aiven", (appCount.get(log.source ?? "Aiven") ?? 0) + 1));
 
   const appBreakdown = Array.from(appCount.entries()).map(([name, value], index) => ({
     name,

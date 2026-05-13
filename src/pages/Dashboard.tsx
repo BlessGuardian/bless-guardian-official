@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { buildDashboardData, mockStats, mockAttempts, mockChartData, mockAppBreakdown, type AivenFraudLog } from "@/lib/mockData";
 import {
   Shield, ShieldAlert, ShieldCheck, Smartphone, LogOut,
-  TrendingUp, AlertTriangle, Lightbulb, HelpCircle, ChevronRight,
+  TrendingUp, AlertTriangle, Lightbulb, HelpCircle, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import {
 import logo from "@/assets/logo.png";
 
 const riskColor = { alto: "text-red-400 bg-red-400/10", médio: "text-yellow-400 bg-yellow-400/10", baixo: "text-emerald-400 bg-emerald-400/10" };
+const attemptsPerPage = 20;
 
 const faqItems = [
   { q: "O que é phishing?", a: "Phishing é uma técnica de fraude onde criminosos se passam por empresas ou pessoas confiáveis para roubar dados pessoais, senhas e informações financeiras. Geralmente chegam por e-mail, SMS ou mensagens em apps." },
@@ -39,6 +39,7 @@ const tips = [
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUsingLiveData, setIsUsingLiveData] = useState(false);
+  const [attemptsPage, setAttemptsPage] = useState(1);
   const [dashboardData, setDashboardData] = useState({
     stats: mockStats,
     attempts: mockAttempts,
@@ -49,18 +50,33 @@ const Dashboard = () => {
   useEffect(() => {
     const loadFraudLogs = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke<{ rows: AivenFraudLog[] }>("get-fraud-logs");
+      try {
+        const response = await fetch("/api/fraud-logs");
+        if (!response.ok) {
+          throw new Error(`Falha ao carregar dados do Aiven: ${response.status}`);
+        }
 
-      if (!error && data?.rows?.length) {
-        setDashboardData(buildDashboardData(data.rows));
+        const data = await response.json() as { rows?: AivenFraudLog[] };
+        setDashboardData(buildDashboardData(data.rows ?? []));
+        setAttemptsPage(1);
         setIsUsingLiveData(true);
+      } catch (error) {
+        console.error(error);
+        setIsUsingLiveData(false);
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     loadFraudLogs();
   }, []);
+
+  const totalAttempts = dashboardData.attempts.length;
+  const totalPages = Math.max(1, Math.ceil(totalAttempts / attemptsPerPage));
+  const currentPage = Math.min(attemptsPage, totalPages);
+  const pageStart = (currentPage - 1) * attemptsPerPage;
+  const pageEnd = Math.min(pageStart + attemptsPerPage, totalAttempts);
+  const paginatedAttempts = dashboardData.attempts.slice(pageStart, pageEnd);
 
   return (
     <div className="min-h-screen bg-background">
@@ -172,12 +188,12 @@ const Dashboard = () => {
                         <th className="pb-3 font-medium">Tipo</th>
                         <th className="pb-3 font-medium">Risco</th>
                         <th className="pb-3 font-medium">Status</th>
-                        <th className="pb-3 font-medium hidden lg:table-cell">Conteúdo</th>
+                        <th className="pb-3 font-medium">Conteúdo</th>
                         <th className="pb-3 font-medium hidden md:table-cell">Descrição</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dashboardData.attempts.map((a) => (
+                      {paginatedAttempts.map((a) => (
                         <tr key={a.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                           <td className="py-3 pr-4 whitespace-nowrap">{a.date}</td>
                           <td className="py-3 pr-4 font-medium">{a.app}</td>
@@ -192,7 +208,7 @@ const Dashboard = () => {
                               {a.blocked ? "Bloqueado" : "Alerta"}
                             </Badge>
                           </td>
-                          <td className="py-3 pr-4 text-muted-foreground hidden lg:table-cell max-w-sm truncate" title={a.content ?? undefined}>
+                          <td className="py-3 pr-4 text-muted-foreground min-w-80 max-w-md truncate" title={a.content ?? undefined}>
                             {a.content ?? "Sem conteúdo"}
                           </td>
                           <td className="py-3 text-muted-foreground hidden md:table-cell max-w-xs truncate">{a.description}</td>
@@ -200,6 +216,34 @@ const Dashboard = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+                <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando {totalAttempts === 0 ? 0 : pageStart + 1}-{pageEnd} de {totalAttempts}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAttemptsPage((page) => Math.max(1, page - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Anterior
+                    </Button>
+                    <span className="min-w-24 text-center text-sm text-muted-foreground">
+                      Pagina {currentPage} de {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAttemptsPage((page) => Math.min(totalPages, page + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Proxima
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
