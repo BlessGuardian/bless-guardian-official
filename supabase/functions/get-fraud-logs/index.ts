@@ -45,7 +45,10 @@ Deno.serve(async (req) => {
     await client.connect();
 
     const result = await client.queryObject<Record<string, unknown>>(
-      `SELECT * FROM fraud_logs ORDER BY 1 DESC LIMIT 500`,
+      `SELECT id, source, risk_score, is_fraud, explanation, detected_at
+       FROM fraud_logs
+       ORDER BY detected_at DESC
+       LIMIT 500`,
     );
 
     return new Response(
