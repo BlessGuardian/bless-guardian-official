@@ -105,7 +105,7 @@ const Dashboard = () => {
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="bg-muted/50">
             <TabsTrigger value="overview" className="gap-1.5"><TrendingUp className="h-4 w-4" /> Visão Geral</TabsTrigger>
-            <TabsTrigger value="tips" className="gap-1.5"><Lightbulb className="h-4 w-4" /> Dicas</TabsTrigger>
+            <TabsTrigger value="tips" className="gap-1.5"><Lightbulb className="h-4 w-4" /> Dicass</TabsTrigger>
             <TabsTrigger value="faq" className="gap-1.5"><HelpCircle className="h-4 w-4" /> FAQ</TabsTrigger>
           </TabsList>
 
