@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getCurrentUser, logout, type User } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { buildDashboardData, mockStats, mockAttempts, mockChartData, mockAppBreakdown, type AivenFraudLog } from "@/lib/mockData";
 import {
@@ -39,8 +37,6 @@ const tips = [
 ];
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUsingLiveData, setIsUsingLiveData] = useState(false);
   const [dashboardData, setDashboardData] = useState({
@@ -49,15 +45,6 @@ const Dashboard = () => {
     chartData: mockChartData,
     appBreakdown: mockAppBreakdown,
   });
-
-  useEffect(() => {
-    const u = getCurrentUser();
-    if (!u) {
-      navigate("/login");
-      return;
-    }
-    setUser(u);
-  }, [navigate]);
 
   useEffect(() => {
     const loadFraudLogs = async () => {
@@ -75,13 +62,6 @@ const Dashboard = () => {
     loadFraudLogs();
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
-  if (!user) return null;
-
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar */}
@@ -92,9 +72,11 @@ const Dashboard = () => {
             <span className="font-display text-base font-bold text-foreground">BlessGuardian</span>
           </a>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:inline">Olá, {user.name}</span>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" /> Sair
+            <span className="text-sm text-muted-foreground hidden sm:inline">Modo sem autenticação</span>
+            <Button variant="ghost" size="sm" asChild>
+              <a href="/">
+                <LogOut className="h-4 w-4 mr-1" /> Voltar
+              </a>
             </Button>
           </div>
         </div>
