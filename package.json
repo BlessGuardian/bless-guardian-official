@@ -8,6 +8,7 @@
     "dev:vite": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "deploy": "npm run build && npx wrangler deploy",
     "lint": "eslint .",
     "preview": "node server/index.mjs --preview",
     "test": "vitest run",
