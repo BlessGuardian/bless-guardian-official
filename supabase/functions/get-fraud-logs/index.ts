@@ -25,8 +25,8 @@ Deno.serve(async (req) => {
     port: Number(u.port || 5432),
     tls: {
       enabled: true,
-      enforce: false,
-      caCertificates: [],
+      enforce: true,
+      caCertificates: Deno.env.get("AIVEN_CA_CERT") ? [Deno.env.get("AIVEN_CA_CERT")!] : [],
     },
   });
 
