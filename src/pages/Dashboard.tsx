@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { buildDashboardData, mockStats, mockAttempts, mockChartData, mockAppBreakdown, type AivenFraudLog } from "@/lib/mockData";
+import { buildDashboardData, emptyDashboardData, type AivenFraudLog } from "@/lib/dashboardData";
 import {
-  Shield, ShieldAlert, ShieldCheck, Smartphone, LogOut,
+  Shield, ShieldAlert, ShieldCheck, Smartphone, LogOut, Loader2,
   TrendingUp, AlertTriangle, Lightbulb, HelpCircle, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -39,17 +39,14 @@ const tips = [
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUsingLiveData, setIsUsingLiveData] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [attemptsPage, setAttemptsPage] = useState(1);
-  const [dashboardData, setDashboardData] = useState({
-    stats: mockStats,
-    attempts: mockAttempts,
-    chartData: mockChartData,
-    appBreakdown: mockAppBreakdown,
-  });
+  const [dashboardData, setDashboardData] = useState(emptyDashboardData);
 
   useEffect(() => {
     const loadFraudLogs = async () => {
       setIsLoading(true);
+      setLoadError(null);
       try {
         const response = await fetch("/api/fraud-logs");
         if (!response.ok) {
@@ -62,6 +59,9 @@ const Dashboard = () => {
         setIsUsingLiveData(true);
       } catch (error) {
         console.error(error);
+        setDashboardData(emptyDashboardData);
+        setAttemptsPage(1);
+        setLoadError("Falha ao carregar dados do Aiven");
         setIsUsingLiveData(false);
       } finally {
         setIsLoading(false);
@@ -98,14 +98,15 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="container py-8 space-y-8">
+      <main className="container py-10 space-y-8">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Área do usuário</p>
             <h1 className="font-display text-3xl font-bold text-foreground">Dashboard de proteção</h1>
           </div>
-          <Badge variant={isUsingLiveData ? "default" : "secondary"} className="w-fit">
-            {isLoading ? "Carregando dados" : isUsingLiveData ? "Dados Aiven Cloud" : "Dados demonstrativos"}
+          <Badge variant={loadError ? "destructive" : isUsingLiveData ? "default" : "secondary"} className="w-fit gap-1.5">
+            {isLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+            {isLoading ? "Carregando Aiven" : loadError ?? (isUsingLiveData ? "Dados Aiven Cloud" : "Sem dados Aiven")}
           </Badge>
         </div>
 
@@ -121,7 +122,7 @@ const Dashboard = () => {
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="bg-muted/50">
             <TabsTrigger value="overview" className="gap-1.5"><TrendingUp className="h-4 w-4" /> Visão Geral</TabsTrigger>
-            <TabsTrigger value="tips" className="gap-1.5"><Lightbulb className="h-4 w-4" /> Dicass</TabsTrigger>
+            <TabsTrigger value="tips" className="gap-1.5"><Lightbulb className="h-4 w-4" /> Dicas</TabsTrigger>
             <TabsTrigger value="faq" className="gap-1.5"><HelpCircle className="h-4 w-4" /> FAQ</TabsTrigger>
           </TabsList>
 
@@ -173,7 +174,7 @@ const Dashboard = () => {
             </div>
 
             {/* Recent attempts table */}
-            <Card className="bg-card/50 border-border">
+            <Card className="bg-card/70 border-border">
               <CardHeader>
                 <CardTitle className="text-base">Tentativas Recentes</CardTitle>
                 <CardDescription>Últimas detecções do BlessGuardian</CardDescription>
@@ -193,7 +194,22 @@ const Dashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedAttempts.map((a) => (
+                      {isLoading ? (
+                        <tr>
+                          <td colSpan={7} className="py-10 text-center text-muted-foreground">
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Carregando dados do Aiven
+                            </div>
+                          </td>
+                        </tr>
+                      ) : paginatedAttempts.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-10 text-center text-muted-foreground">
+                            {loadError ?? "Nenhuma tentativa encontrada no Aiven"}
+                          </td>
+                        </tr>
+                      ) : paginatedAttempts.map((a) => (
                         <tr key={a.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                           <td className="py-3 pr-4 whitespace-nowrap">{a.date}</td>
                           <td className="py-3 pr-4 font-medium">{a.app}</td>
