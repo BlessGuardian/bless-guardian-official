@@ -102,7 +102,7 @@ const Dashboard = () => {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Área do usuário</p>
-            <h1 className="font-display text-3xl font-bold text-foreground">Dashboard de proteção</h1>
+            <h1 className="font-display text-3xl font-bold text-foreground">Dashboard de proteçãoa</h1>
           </div>
           <Badge variant={loadError ? "destructive" : isUsingLiveData ? "default" : "secondary"} className="w-fit gap-1.5">
             {isLoading && <Loader2 className="h-3 w-3 animate-spin" />}
