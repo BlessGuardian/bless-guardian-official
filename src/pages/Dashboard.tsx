@@ -105,7 +105,7 @@ const Dashboard = () => {
           </div>
           <Badge variant={loadError ? "destructive" : isUsingLiveData ? "default" : "secondary"} className="w-fit gap-1.5">
             {isLoading && <Loader2 className="h-3 w-3 animate-spin" />}
-            {isLoading ? "Carregando Aiven" : loadError ?? (isUsingLiveData ? "Dados Aiven Cloud" : "Sem dados Aiven")}
+            {isLoading ? "Carregando dados" : loadError ?? (isUsingLiveData ? "Dados em tempo real" : "Sem dados")}
           </Badge>
         </div>
 
