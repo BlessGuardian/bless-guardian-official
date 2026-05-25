@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { buildDashboardData, emptyDashboardData, type AivenFraudLog } from "@/lib/dashboardData";
 import {
   Shield, ShieldAlert, ShieldCheck, Smartphone, LogOut, Loader2,
@@ -48,20 +49,18 @@ const Dashboard = () => {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const response = await fetch("/api/fraud-logs");
-        if (!response.ok) {
-          throw new Error(`Falha ao carregar dados do Aiven: ${response.status}`);
-        }
+        const { data, error } = await supabase.functions.invoke<{ rows?: AivenFraudLog[]; error?: string }>("get-fraud-logs");
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
 
-        const data = await response.json() as { rows?: AivenFraudLog[] };
-        setDashboardData(buildDashboardData(data.rows ?? []));
+        setDashboardData(buildDashboardData(data?.rows ?? []));
         setAttemptsPage(1);
         setIsUsingLiveData(true);
       } catch (error) {
         console.error(error);
         setDashboardData(emptyDashboardData);
         setAttemptsPage(1);
-        setLoadError("Falha ao carregar dados do Aiven");
+        setLoadError("Falha ao carregar dados");
         setIsUsingLiveData(false);
       } finally {
         setIsLoading(false);
@@ -106,7 +105,7 @@ const Dashboard = () => {
           </div>
           <Badge variant={loadError ? "destructive" : isUsingLiveData ? "default" : "secondary"} className="w-fit gap-1.5">
             {isLoading && <Loader2 className="h-3 w-3 animate-spin" />}
-            {isLoading ? "Carregando Aiven" : loadError ?? (isUsingLiveData ? "Dados Aiven Cloud" : "Sem dados Aiven")}
+            {isLoading ? "Carregando dados" : loadError ?? (isUsingLiveData ? "Dados em tempo real" : "Sem dados")}
           </Badge>
         </div>
 
@@ -199,14 +198,14 @@ const Dashboard = () => {
                           <td colSpan={7} className="py-10 text-center text-muted-foreground">
                             <div className="flex items-center justify-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
-                              Carregando dados do Aiven
+                              Carregando dados
                             </div>
                           </td>
                         </tr>
                       ) : paginatedAttempts.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="py-10 text-center text-muted-foreground">
-                            {loadError ?? "Nenhuma tentativa encontrada no Aiven"}
+                            {loadError ?? "Nenhuma tentativa encontrada"}
                           </td>
                         </tr>
                       ) : paginatedAttempts.map((a) => (
