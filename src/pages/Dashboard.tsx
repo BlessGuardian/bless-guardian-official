@@ -205,7 +205,7 @@ const Dashboard = () => {
                       ) : paginatedAttempts.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="py-10 text-center text-muted-foreground">
-                            {loadError ?? "Nenhuma tentativa encontrada no Aiven"}
+                            {loadError ?? "Nenhuma tentativa encontrada"}
                           </td>
                         </tr>
                       ) : paginatedAttempts.map((a) => (
