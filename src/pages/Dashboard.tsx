@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { buildDashboardData, emptyDashboardData, type AivenFraudLog } from "@/lib/dashboardData";
 import {
   Shield, ShieldAlert, ShieldCheck, Smartphone, LogOut, Loader2,
