@@ -49,20 +49,18 @@ const Dashboard = () => {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const response = await fetch("/api/fraud-logs");
-        if (!response.ok) {
-          throw new Error(`Falha ao carregar dados do Aiven: ${response.status}`);
-        }
+        const { data, error } = await supabase.functions.invoke<{ rows?: AivenFraudLog[]; error?: string }>("get-fraud-logs");
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
 
-        const data = await response.json() as { rows?: AivenFraudLog[] };
-        setDashboardData(buildDashboardData(data.rows ?? []));
+        setDashboardData(buildDashboardData(data?.rows ?? []));
         setAttemptsPage(1);
         setIsUsingLiveData(true);
       } catch (error) {
         console.error(error);
         setDashboardData(emptyDashboardData);
         setAttemptsPage(1);
-        setLoadError("Falha ao carregar dados do Aiven");
+        setLoadError("Falha ao carregar dados");
         setIsUsingLiveData(false);
       } finally {
         setIsLoading(false);
