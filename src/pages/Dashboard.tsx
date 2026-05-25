@@ -198,7 +198,7 @@ const Dashboard = () => {
                           <td colSpan={7} className="py-10 text-center text-muted-foreground">
                             <div className="flex items-center justify-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
-                              Carregando dados do Aiven
+                              Carregando dados
                             </div>
                           </td>
                         </tr>
