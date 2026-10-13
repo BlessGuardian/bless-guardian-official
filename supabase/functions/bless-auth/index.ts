@@ -1,7 +1,7 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const API_BASE = Deno.env.get("BLESS_API_URL") ??
-  "https://bl-226178fb7921413cab6e2f261d27f9c2.ecs.us-east-1.on.aws";
+  "https://e5skpalp7g.execute-api.us-east-1.amazonaws.com";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
