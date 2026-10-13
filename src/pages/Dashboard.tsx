@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser, logout } from "@/lib/auth";
 import { buildDashboardData, emptyDashboardData, type AivenFraudLog } from "@/lib/dashboardData";
 import {
   Shield, ShieldAlert, ShieldCheck, Smartphone, LogOut, Loader2,
@@ -38,6 +40,8 @@ const tips = [
 ];
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const user = getCurrentUser();
   const [isLoading, setIsLoading] = useState(true);
   const [isUsingLiveData, setIsUsingLiveData] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -45,11 +49,15 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(emptyDashboardData);
 
   useEffect(() => {
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
     const loadFraudLogs = async () => {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const { data, error } = await supabase.functions.invoke<{ rows?: AivenFraudLog[]; error?: string }>("get-fraud-logs");
+        const { data, error } = await supabase.functions.invoke<{ rows?: AivenFraudLog[]; error?: string }>("get-fraud-logs", { body: { user_id: user.id } });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
 
@@ -60,7 +68,7 @@ const Dashboard = () => {
         console.error(error);
         setDashboardData(emptyDashboardData);
         setAttemptsPage(1);
-        setLoadError("Falha ao carregar dados");
+        setLoadError(error instanceof Error && error.message ? error.message : "Falha ao carregar dados");
         setIsUsingLiveData(false);
       } finally {
         setIsLoading(false);
@@ -68,7 +76,15 @@ const Dashboard = () => {
     };
 
     loadFraudLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  if (!user) return null;
 
   const totalAttempts = dashboardData.attempts.length;
   const totalPages = Math.max(1, Math.ceil(totalAttempts / attemptsPerPage));
@@ -87,11 +103,9 @@ const Dashboard = () => {
             <span className="font-display text-base font-bold text-foreground">BlessGuardian</span>
           </a>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:inline">Modo sem autenticação</span>
-            <Button variant="ghost" size="sm" asChild>
-              <a href="/">
-                <LogOut className="h-4 w-4 mr-1" /> Voltar
-              </a>
+            <span className="text-sm text-muted-foreground hidden sm:inline">{user.email}</span>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-1" /> Sair
             </Button>
           </div>
         </div>
