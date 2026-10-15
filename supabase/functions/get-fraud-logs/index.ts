@@ -14,14 +14,16 @@ Deno.serve(async (req) => {
 
   try {
     let userId: string | undefined;
+    let aggregate = false;
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
       if (typeof body?.user_id === "string" && /^[0-9a-fA-F-]{36}$/.test(body.user_id)) userId = body.user_id;
+      if (body?.aggregate === true) aggregate = true;
     }
-    if (!userId) return json({ rows: [], error: "Faça login para ver seus dados" });
+    if (!aggregate && !userId) return json({ rows: [], error: "Faça login para ver seus dados" });
 
     const url = new URL(`${API_BASE}/logs`);
-    url.searchParams.set("user_id", userId);
+    if (userId) url.searchParams.set("user_id", userId);
 
     let res: Response;
     try {
