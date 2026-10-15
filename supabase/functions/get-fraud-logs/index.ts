@@ -9,6 +9,10 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+// Registros de teste da própria API (ex.: "FastAPI", "SwaggerLocal") não
+// representam detecções reais e ficam fora das estatísticas públicas.
+const TEST_SOURCE = /fastapi|swagger/i;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -45,19 +49,15 @@ Deno.serve(async (req) => {
     // Modo agregado: retorna apenas estatísticas gerais, sem conteúdo,
     // explicações ou qualquer dado identificável de usuários.
     if (aggregate) {
+      const logs = rows.filter((log: { source?: unknown }) => !TEST_SOURCE.test(String(log?.source ?? "")));
+
       const byApp = new Map<string, number>();
-      const byRisk = { alto: 0, medio: 0, baixo: 0 };
       const byMonth = new Map<string, { month: string; tentativas: number; bloqueadas: number; time: number }>();
       let frauds = 0;
 
-      for (const log of rows) {
+      for (const log of logs) {
         const source = typeof log?.source === "string" && log.source ? log.source : "Outros";
         byApp.set(source, (byApp.get(source) ?? 0) + 1);
-
-        const score = Number(log?.risk_score ?? 0);
-        if (score >= 0.75) byRisk.alto += 1;
-        else if (score >= 0.4) byRisk.medio += 1;
-        else byRisk.baixo += 1;
 
         const isFraud = log?.is_fraud ?? true;
         if (isFraud) frauds += 1;
@@ -86,20 +86,15 @@ Deno.serve(async (req) => {
 
       return json({
         stats: {
-          totalAnalisadas: rows.length,
+          totalAnalisadas: logs.length,
           golpesBloqueados: frauds,
           appsMonitorados: byApp.size,
-          usuariosProtegidos: new Set(rows.map((l: { user_id?: string }) => l?.user_id).filter(Boolean)).size,
+          usuariosProtegidos: new Set(logs.map((l: { user_id?: string }) => l?.user_id).filter(Boolean)).size,
         },
         byApp: Array.from(byApp.entries())
           .map(([name, value]) => ({ name, value }))
           .sort((a, b) => b.value - a.value)
           .slice(0, 6),
-        byRisk: [
-          { name: "Alto", value: byRisk.alto },
-          { name: "Médio", value: byRisk.medio },
-          { name: "Baixo", value: byRisk.baixo },
-        ],
         monthly,
       });
     }
