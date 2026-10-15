@@ -15,7 +15,6 @@ interface GlobalStats {
     usuariosProtegidos: number;
   };
   byApp: { name: string; value: number }[];
-  byRisk: { name: string; value: number }[];
   monthly: { month: string; tentativas: number; bloqueadas: number }[];
 }
 
@@ -27,12 +26,6 @@ const appColors = [
   "hsl(160, 60%, 45%)",
   "hsl(38, 90%, 55%)",
 ];
-
-const riskColors: Record<string, string> = {
-  Alto: "hsl(0, 72%, 55%)",
-  "Médio": "hsl(38, 90%, 55%)",
-  Baixo: "hsl(160, 60%, 45%)",
-};
 
 const tooltipStyle = {
   background: "hsl(220,30%,12%)",
@@ -108,7 +101,7 @@ const StatsSection = () => {
           ))}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-2">
           <Card className="bg-card/50 border-border">
             <CardHeader>
               <CardTitle className="text-base">Tentativas por mês</CardTitle>
@@ -139,26 +132,6 @@ const StatsSection = () => {
                   <Pie data={data.byApp} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45} paddingAngle={3}>
                     {data.byApp.map((_, i) => (
                       <Cell key={i} fill={appColors[i % appColors.length]} />
-                    ))}
-                  </Pie>
-                  <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/50 border-border">
-            <CardHeader>
-              <CardTitle className="text-base">Nível de risco</CardTitle>
-              <CardDescription>Gravidade das tentativas detectadas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie data={data.byRisk} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45} paddingAngle={3}>
-                    {data.byRisk.map((entry, i) => (
-                      <Cell key={i} fill={riskColors[entry.name] ?? appColors[i % appColors.length]} />
                     ))}
                   </Pie>
                   <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
