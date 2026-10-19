@@ -57,7 +57,7 @@ const Dashboard = () => {
       setIsLoading(true);
       setLoadError(null);
       try {
-        const { data, error } = await supabase.functions.invoke<{ rows?: AivenFraudLog[]; error?: string }>("get-fraud-logs", { body: { user_id: user.id } });
+        const { data, error } = await supabase.functions.invoke<{ rows?: AivenFraudLog[]; error?: string }>("get-fraud-logs", { body: { token: user.token } });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
 
