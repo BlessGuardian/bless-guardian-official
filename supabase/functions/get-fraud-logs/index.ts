@@ -9,99 +9,61 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// Registros de teste da própria API (ex.: "FastAPI", "SwaggerLocal") não
-// representam detecções reais e ficam fora das estatísticas públicas.
-const TEST_SOURCE = /fastapi|swagger/i;
+async function call(path: string, token?: string) {
+  const headers: Record<string, string> = { accept: "application/json" };
+  if (token) headers.authorization = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}${path}`, { headers });
+  const data = await res.json().catch(() => null);
+  return { ok: res.ok, status: res.status, data };
+}
+
+type Cat = { categoria?: string; quantidade?: number };
+const categories = (d: { stats?: Cat[] } | null) =>
+  (Array.isArray(d?.stats) ? d!.stats! : []).map((c) => ({
+    name: String(c.categoria ?? "Desconhecido"),
+    value: Number(c.quantidade ?? 0),
+  })).sort((a, b) => b.value - a.value);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    let userId: string | undefined;
-    let aggregate = false;
-    if (req.method === "POST") {
-      const body = await req.json().catch(() => ({}));
-      if (typeof body?.user_id === "string" && /^[0-9a-fA-F-]{36}$/.test(body.user_id)) userId = body.user_id;
-      if (body?.aggregate === true) aggregate = true;
-    }
-    if (!aggregate && !userId) return json({ rows: [], error: "Faça login para ver seus dados" });
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    const token = typeof body?.token === "string" && body.token.length < 4000 ? body.token : undefined;
 
-    const url = new URL(`${API_BASE}/logs`);
-    if (userId) url.searchParams.set("user_id", userId);
-
-    let res: Response;
-    try {
-      res = await fetch(url, { headers: { accept: "application/json" } });
-    } catch (e) {
-      console.error("get-fraud-logs unreachable:", e);
-      return json({ rows: [], error: "Servidor do BlessGuardian indisponível no momento" });
+    // Estatísticas gerais (sem token): apenas contagens por categoria.
+    if (body?.aggregate === true) {
+      const r = await call("/stats");
+      if (!r.ok) return json({ byCategory: [], error: "Falha ao carregar estatísticas" });
+      const byCategory = categories(r.data);
+      return json({ byCategory, total: byCategory.reduce((s, c) => s + c.value, 0) });
     }
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(`Bless API ${res.status}: ${text.slice(0, 200)}`);
-      return json({ rows: [], error: "Falha ao carregar dados" });
+    if (!token) return json({ rows: [], error: "Faça login para ver seus dados" });
+
+    const [logs, stats, score] = await Promise.all([
+      call("/logs", token),
+      call("/stats", token),
+      call("/score", token),
+    ]);
+
+    if (logs.status === 401 || logs.status === 403) {
+      return json({ rows: [], error: "Sessão expirada, faça login novamente", expired: true });
     }
+    if (!logs.ok) return json({ rows: [], error: "Falha ao carregar dados" });
 
-    const payload = await res.json();
-    const rows = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
+    const p = logs.data;
+    const rows = Array.isArray(p?.data) ? p.data : Array.isArray(p?.logs) ? p.logs : Array.isArray(p) ? p : [];
+    const s = score.ok ? score.data : null;
+    const scoreValue = typeof s === "number" ? s : Number(s?.score ?? s?.vulnerability_score ?? NaN);
 
-    // Modo agregado: retorna apenas estatísticas gerais, sem conteúdo,
-    // explicações ou qualquer dado identificável de usuários.
-    if (aggregate) {
-      const logs = rows.filter((log: { source?: unknown }) => !TEST_SOURCE.test(String(log?.source ?? "")));
-
-      const byApp = new Map<string, number>();
-      const byMonth = new Map<string, { month: string; tentativas: number; bloqueadas: number; time: number }>();
-      let frauds = 0;
-
-      for (const log of logs) {
-        const source = typeof log?.source === "string" && log.source ? log.source : "Outros";
-        byApp.set(source, (byApp.get(source) ?? 0) + 1);
-
-        const isFraud = log?.is_fraud ?? true;
-        if (isFraud) frauds += 1;
-
-        if (log?.detected_at) {
-          const date = new Date(log.detected_at);
-          if (!Number.isNaN(date.getTime())) {
-            const key = `${date.getFullYear()}-${date.getMonth()}`;
-            const entry = byMonth.get(key) ?? {
-              month: date.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
-              tentativas: 0,
-              bloqueadas: 0,
-              time: date.getTime(),
-            };
-            entry.tentativas += 1;
-            if (isFraud) entry.bloqueadas += 1;
-            byMonth.set(key, entry);
-          }
-        }
-      }
-
-      const monthly = Array.from(byMonth.values())
-        .sort((a, b) => a.time - b.time)
-        .slice(-6)
-        .map(({ month, tentativas, bloqueadas }) => ({ month, tentativas, bloqueadas }));
-
-      return json({
-        stats: {
-          totalAnalisadas: logs.length,
-          golpesBloqueados: frauds,
-          appsMonitorados: byApp.size,
-          usuariosProtegidos: new Set(logs.map((l: { user_id?: string }) => l?.user_id).filter(Boolean)).size,
-        },
-        byApp: Array.from(byApp.entries())
-          .map(([name, value]) => ({ name, value }))
-          .sort((a, b) => b.value - a.value)
-          .slice(0, 6),
-        monthly,
-      });
-    }
-
-    return json({ rows });
+    return json({
+      rows,
+      byCategory: stats.ok ? categories(stats.data) : [],
+      score: Number.isFinite(scoreValue) ? scoreValue : null,
+    });
   } catch (error) {
     console.error("get-fraud-logs failed:", error);
-    return json({ rows: [], error: "Falha ao carregar dados" }, 500);
+    return json({ rows: [], error: "Servidor do BlessGuardian indisponível no momento" }, 500);
   }
 });
