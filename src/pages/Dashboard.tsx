@@ -18,7 +18,6 @@ import {
 } from "recharts";
 import logo from "@/assets/logo.png";
 
-const riskColor = { alto: "text-red-400 bg-red-400/10", médio: "text-yellow-400 bg-yellow-400/10", baixo: "text-emerald-400 bg-emerald-400/10" };
 const attemptsPerPage = 20;
 
 const faqItems = [
@@ -199,9 +198,6 @@ const Dashboard = () => {
                       <tr className="border-b border-border text-muted-foreground text-left">
                         <th className="pb-3 font-medium">Data</th>
                         <th className="pb-3 font-medium">App</th>
-                        <th className="pb-3 font-medium">Tipo</th>
-                        <th className="pb-3 font-medium">Risco</th>
-                        <th className="pb-3 font-medium">Status</th>
                         <th className="pb-3 font-medium">Conteúdo</th>
                         <th className="pb-3 font-medium hidden md:table-cell">Descrição</th>
                       </tr>
@@ -209,7 +205,7 @@ const Dashboard = () => {
                     <tbody>
                       {isLoading ? (
                         <tr>
-                          <td colSpan={7} className="py-10 text-center text-muted-foreground">
+                          <td colSpan={4} className="py-10 text-center text-muted-foreground">
                             <div className="flex items-center justify-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
                               Carregando dados
@@ -218,7 +214,7 @@ const Dashboard = () => {
                         </tr>
                       ) : paginatedAttempts.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="py-10 text-center text-muted-foreground">
+                          <td colSpan={4} className="py-10 text-center text-muted-foreground">
                             {loadError ?? "Nenhuma tentativa encontrada"}
                           </td>
                         </tr>
@@ -226,17 +222,6 @@ const Dashboard = () => {
                         <tr key={a.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                           <td className="py-3 pr-4 whitespace-nowrap">{a.date}</td>
                           <td className="py-3 pr-4 font-medium">{a.app}</td>
-                          <td className="py-3 pr-4">{a.type}</td>
-                          <td className="py-3 pr-4">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${riskColor[a.risk]}`}>
-                              {a.risk}
-                            </span>
-                          </td>
-                          <td className="py-3 pr-4">
-                            <Badge variant={a.blocked ? "default" : "destructive"} className="text-xs">
-                              {a.blocked ? "Bloqueado" : "Alerta"}
-                            </Badge>
-                          </td>
                           <td className="py-3 pr-4 text-muted-foreground min-w-80 max-w-md truncate" title={a.content ?? undefined}>
                             {a.content ?? "Sem conteúdo"}
                           </td>
