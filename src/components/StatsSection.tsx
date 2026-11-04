@@ -5,7 +5,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { buildDashboardData, type AivenFraudLog, type FraudAttempt } from "@/lib/dashboardData";
 import { ShieldAlert, Gauge, Layers, Loader2, User as UserIcon, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
@@ -13,7 +12,6 @@ type Category = { name: string; value: number };
 
 const colors = ["hsl(213, 90%, 55%)", "hsl(180, 60%, 50%)", "hsl(160, 60%, 45%)", "hsl(38, 90%, 55%)", "hsl(213, 70%, 70%)", "hsl(0, 70%, 60%)"];
 const tooltipStyle = { background: "hsl(220,30%,12%)", border: "1px solid hsl(220,20%,20%)", borderRadius: 8, color: "#fff" };
-const riskColor = { alto: "text-red-400 bg-red-400/10", médio: "text-yellow-400 bg-yellow-400/10", baixo: "text-emerald-400 bg-emerald-400/10" };
 
 const CategoryChart = ({ data }: { data: Category[] }) => (
   <ResponsiveContainer width="100%" height={260}>
@@ -136,8 +134,6 @@ const StatsSection = () => {
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       <span className="font-medium text-foreground">{a.app}</span>
                       <span className="text-muted-foreground">{a.date}</span>
-                      <span className={`rounded-full px-2 py-0.5 font-medium ${riskColor[a.risk]}`}>risco {a.risk}</span>
-                      <Badge variant={a.blocked ? "default" : "secondary"} className="text-xs">{a.type}</Badge>
                     </div>
                     {a.content && <p className="text-sm text-foreground">“{a.content}”</p>}
                     <p className="text-sm text-muted-foreground">{a.description}</p>
