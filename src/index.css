@@ -32,6 +32,11 @@
     --input: 220 25% 18%;
     --ring: 213 90% 55%;
 
+    --chart-2: 180 60% 50%;
+    --chart-3: 160 60% 45%;
+    --chart-4: 38 90% 55%;
+    --chart-5: 213 70% 70%;
+
     --radius: 0.75rem;
 
     --hero-gradient: linear-gradient(135deg, hsl(213 90% 55% / 0.15), hsl(220 60% 40% / 0.08));
