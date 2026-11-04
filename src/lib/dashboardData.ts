@@ -9,6 +9,18 @@ export interface FraudAttempt {
   description: string;
 }
 
+export interface CategoryCount {
+  name: string;
+  value: number;
+}
+
+export const summarizeCategories = (categories: CategoryCount[]) => {
+  const safe = categories.filter((category) => category.name.trim().toLocaleLowerCase("pt-BR") === "seguro");
+  const flagged = categories.filter((category) => category.name.trim().toLocaleLowerCase("pt-BR") !== "seguro");
+  const sum = (items: CategoryCount[]) => items.reduce((total, item) => total + item.value, 0);
+  return { flagged, safeTotal: sum(safe), flaggedTotal: sum(flagged), analyzedTotal: sum(categories) };
+};
+
 export interface DashboardStats {
   totalAttempts: number;
   blocked: number;

@@ -2,25 +2,25 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUser } from "@/lib/auth";
-import { buildDashboardData, type AivenFraudLog, type FraudAttempt } from "@/lib/dashboardData";
-import { ShieldAlert, Gauge, Layers, Loader2, User as UserIcon, ArrowRight } from "lucide-react";
+import { buildDashboardData, summarizeCategories, type AivenFraudLog, type FraudAttempt } from "@/lib/dashboardData";
+import { ShieldAlert, ShieldCheck, Gauge, Layers, Loader2, User as UserIcon, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 type Category = { name: string; value: number };
 
-const colors = ["hsl(213, 90%, 55%)", "hsl(180, 60%, 50%)", "hsl(160, 60%, 45%)", "hsl(38, 90%, 55%)", "hsl(213, 70%, 70%)", "hsl(0, 70%, 60%)"];
-const tooltipStyle = { background: "hsl(220,30%,12%)", border: "1px solid hsl(220,20%,20%)", borderRadius: 8, color: "#fff" };
+const colors = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+const tooltipStyle = { background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--foreground))" };
 
 const CategoryChart = ({ data }: { data: Category[] }) => (
   <ResponsiveContainer width="100%" height={260}>
     <BarChart data={data} layout="vertical" margin={{ left: 20 }}>
-      <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,20%,18%)" />
-      <XAxis type="number" stroke="hsl(220,10%,50%)" fontSize={12} />
-      <YAxis type="category" dataKey="name" stroke="hsl(220,10%,50%)" fontSize={12} width={100} />
+      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+      <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} />
+      <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} width={100} />
       <Tooltip contentStyle={tooltipStyle} />
-      <Bar dataKey="value" name="Tentativas" radius={[0, 4, 4, 0]}>
+      <Bar dataKey="value" name="Mensagens" radius={[0, 4, 4, 0]}>
         {data.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}
       </Bar>
     </BarChart>
@@ -68,6 +68,8 @@ const StatsSection = () => {
   if (!global) return null;
 
   const scorePct = mine?.score != null ? Math.round(mine.score * 100) : null;
+  const generalSummary = summarizeCategories(global.byCategory);
+  const personalSummary = summarizeCategories(mine?.byCategory ?? []);
 
   return (
     <section className="py-24 border-t border-border">
@@ -82,15 +84,16 @@ const StatsSection = () => {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="grid gap-4">
-            <Stat icon={<ShieldAlert className="h-5 w-5 text-red-400" />} label="Tentativas detectadas" value={global.total} />
-            <Stat icon={<Layers className="h-5 w-5 text-primary" />} label="Tipos de golpe" value={global.byCategory.length} />
+            <Stat icon={<Layers className="h-5 w-5 text-primary" />} label="Mensagens analisadas" value={generalSummary.analyzedTotal} />
+            <Stat icon={<ShieldAlert className="h-5 w-5 text-destructive" />} label="Mensagens sinalizadas" value={generalSummary.flaggedTotal} />
+            <Stat icon={<ShieldCheck className="h-5 w-5 text-primary" />} label="Classificadas como seguras" value={generalSummary.safeTotal} />
           </div>
           <Card className="lg:col-span-2 bg-card/50 border-border">
             <CardHeader>
-              <CardTitle className="text-base">Tipos de golpe mais comuns</CardTitle>
-              <CardDescription>Todos os usuários</CardDescription>
+              <CardTitle className="text-base">Categorias sinalizadas</CardTitle>
+              <CardDescription>Todos os usuários · Acumulado disponível</CardDescription>
             </CardHeader>
-            <CardContent><CategoryChart data={global.byCategory} /></CardContent>
+            <CardContent>{generalSummary.flagged.length ? <CategoryChart data={generalSummary.flagged} /> : <p className="py-10 text-center text-muted-foreground">Nenhuma mensagem sinalizada</p>}</CardContent>
           </Card>
         </div>
 
@@ -108,16 +111,16 @@ const StatsSection = () => {
 
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="grid gap-4">
-                <Stat icon={<ShieldAlert className="h-5 w-5 text-red-400" />} label="Suas tentativas detectadas" value={mine.attempts.length} />
+                <Stat icon={<ShieldAlert className="h-5 w-5 text-destructive" />} label="Suas mensagens analisadas" value={mine.attempts.length} />
                 <Stat icon={<Gauge className="h-5 w-5 text-yellow-400" />} label="Score de vulnerabilidade" value={scorePct != null ? `${scorePct}%` : "—"} />
               </div>
               <Card className="lg:col-span-2 bg-card/50 border-border">
                 <CardHeader>
-                  <CardTitle className="text-base">Seus golpes por tipo</CardTitle>
+                  <CardTitle className="text-base">Suas categorias sinalizadas</CardTitle>
                   <CardDescription>Apenas as suas mensagens</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {mine.byCategory.length ? <CategoryChart data={mine.byCategory} /> : <p className="text-sm text-muted-foreground py-10 text-center">Sem dados ainda</p>}
+                  {personalSummary.flagged.length ? <CategoryChart data={personalSummary.flagged} /> : <p className="text-sm text-muted-foreground py-10 text-center">Nenhuma mensagem sinalizada</p>}
                 </CardContent>
               </Card>
             </div>
